@@ -1,5 +1,6 @@
 import Conversation from "../models/conservation.model.js";
 import Message from "../models/message.model.js";
+import { getRecieverSocketId, io } from "../socket/socket.js";
 
 export const sendMessage = async (req, res) => {
     try {
@@ -30,7 +31,18 @@ export const sendMessage = async (req, res) => {
         // await conversation.save()
         // await newMessage.save()
 
-        await Promise.all([conversation.save(),newMessage.save()])  //this done so that  both the conversation and messages get saved at once to avoid any unhandled promise rejection errors reduces time as both of them runs paralley
+        await Promise.all([conversation.save(), newMessage.save()])  //this done so that  both the conversation and messages get saved at once to avoid any unhandled promise rejection errors reduces time as both of them runs paralley
+
+
+        //SOCKET IO FUNCTIONALITY WILL GO HERE
+
+        const receiverSocketId = getRecieverSocketId(recieverId);
+
+        if (receiverSocketId) {
+
+            //io.to(<socket_id>).emit() used to send events to specific 
+            io.to(receiverSocketId).emit('newMessage', newMessage)
+        }
 
         return res.status(201).json(newMessage)
 
@@ -40,17 +52,17 @@ export const sendMessage = async (req, res) => {
     }
 }
 
-export const getMessages = async (req,res) => {
+export const getMessages = async (req, res) => {
     try {
-        
-        const {id : userToChatId}  = req.params;
+
+        const { id: userToChatId } = req.params;
         const senderId = req.user._id;
 
         const conversation = await Conversation.findOne({
-            participants : {$all : [senderId,userToChatId]},
+            participants: { $all: [senderId, userToChatId] },
         }).populate("messages"); //this will now instead of returning msg ids it will now return array of objects containing the messages. RETURNS ACTUAL MESSAGES NOT REFERENECE
 
-        if(!conversation) return res.status(200).json([]);
+        if (!conversation) return res.status(200).json([]);
 
         const messages = conversation.messages;
 
