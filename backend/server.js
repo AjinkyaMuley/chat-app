@@ -1,7 +1,7 @@
+import path from "path"
 import express from "express"
 import dotenv from "dotenv"
 import cookieParser from "cookie-parser";
-
 
 import authRoutes from "./routes/auth.routes.js"
 import messageRoutes from "./routes/message.routes.js"
@@ -13,6 +13,8 @@ import { app, server } from "./socket/socket.js";
 
 
 const PORT = process.env.PORT || 5000;
+
+const __dirname = path.resolve();
 
 dotenv.config();
 
@@ -33,6 +35,14 @@ app.use("/api/auth", authRoutes)   //if suppose we visit the /api/auth/login pag
 app.use("/api/messages", messageRoutes)
 
 app.use("/api/users", userRoutes)
+
+//static middleware provided by express which is used to serve basic static files
+app.use(express.static(path.join(__dirname,"/frontend/dist")))  //it will join the path  of current directory with /frontend/dist  in this dist folder vite will put all the frontend folder through npm run build it is so that it optimizes the production
+
+
+app.get("*",(req,res) => {
+    res.sendFile(path.join(__dirname,"frontend","dist","index.html"))
+})
 
 server.listen(PORT, () => {
     connectToMongoDB();
